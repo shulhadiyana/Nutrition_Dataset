@@ -17,192 +17,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
-st.markdown("""
-<style>
-    .main-header {
-        font-size: 28px;
-        font-weight: bold;
-        color: #1B5E20;
-        text-align: center;
-        margin-bottom: 20px;
-        padding: 15px;
-        background-color: #E8F5E9;
-        border-radius: 10px;
-        border: 1px solid #A5D6A7;
-    }
-    
-    .metric-card {
-        background-color: #FFFFFF;
-        padding: 15px;
-        border-radius: 10px;
-        text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin: 10px 0;
-        border: 1px solid #E0E0E0;
-    }
-    
-    .metric-card h3 {
-        color: #2E7D32;
-        margin-bottom: 10px;
-        font-size: 16px;
-        font-weight: normal;
-    }
-    
-    .metric-card .value {
-        font-size: 32px;
-        font-weight: bold;
-        color: #1B5E20;
-        margin: 10px 0;
-    }
-    
-    .metric-card .target {
-        font-size: 14px;
-        color: #666666;
-        margin-top: 5px;
-    }
-    
-    .metric-card .status-success {
-        color: #4CAF50;
-        font-weight: bold;
-        margin-top: 5px;
-    }
-    
-    .metric-card .status-fail {
-        color: #F44336;
-        font-weight: bold;
-        margin-top: 5px;
-    }
-    
-    .info-box {
-        background-color: #E3F2FD;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 5px solid #2196F3;
-        margin: 15px 0;
-    }
-    
-    .info-box h3 {
-        color: #1565C0;
-        margin-top: 0;
-        margin-bottom: 10px;
-        font-size: 18px;
-    }
-    
-    .info-box p {
-        color: #333333;
-        line-height: 1.6;
-        margin: 0;
-    }
-    
-    .warning-box {
-        background-color: #FFEBEE;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 5px solid #F44336;
-        margin: 15px 0;
-    }
-    
-    .warning-box h3 {
-        color: #C62828;
-        margin-top: 0;
-        margin-bottom: 10px;
-        font-size: 18px;
-    }
-    
-    .warning-box ul {
-        color: #333333;
-        margin: 10px 0;
-        padding-left: 20px;
-    }
-    
-    .warning-box li {
-        margin: 8px 0;
-    }
-    
-    .success-box {
-        background-color: #E8F5E9;
-        padding: 20px;
-        border-radius: 10px;
-        border-left: 5px solid #4CAF50;
-        margin: 15px 0;
-    }
-    
-    .success-box h3 {
-        color: #2E7D32;
-        margin-top: 0;
-        margin-bottom: 10px;
-        font-size: 18px;
-    }
-    
-    .rec-card {
-        background-color: #FFFFFF;
-        padding: 15px;
-        border-radius: 10px;
-        margin: 10px 0;
-        border: 1px solid #E0E0E0;
-        height: 100%;
-    }
-    
-    .rec-card h4 {
-        color: #2E7D32;
-        margin-bottom: 10px;
-        padding-bottom: 8px;
-        border-bottom: 2px solid #A5D6A7;
-    }
-    
-    .rec-card ul {
-        padding-left: 20px;
-        margin: 0;
-    }
-    
-    .rec-card li {
-        margin: 8px 0;
-        color: #555555;
-    }
-    
-    .divider {
-        margin: 30px 0;
-        border: 0;
-        height: 1px;
-        background: linear-gradient(to right, transparent, #A5D6A7, transparent);
-    }
-    
-    .stButton > button {
-        background-color: #2E7D32;
-        color: white;
-        font-weight: bold;
-        border-radius: 5px;
-        border: none;
-        padding: 10px 20px;
-        width: 100%;
-    }
-    
-    .stButton > button:hover {
-        background-color: #1B5E20;
-        color: white;
-    }
-    
-    .feature-info {
-        background-color: #FFF3E0;
-        padding: 10px;
-        border-radius: 8px;
-        margin: 10px 0;
-        font-size: 12px;
-        border-left: 3px solid #FF9800;
-    }
-    
-    .page-subtitle {
-        font-size: 20px;
-        font-weight: bold;
-        color: #333;
-        margin-bottom: 15px;
-        padding-bottom: 8px;
-        border-bottom: 2px solid #A5D6A7;
-    }
-</style>
-""", unsafe_allow_html=True)
-
 # Load data
 @st.cache_data
 def load_data():
@@ -232,12 +46,10 @@ def load_model():
     try:
         model = joblib.load('best_nutrision.pkl')
         scaler = joblib.load('scaler_food.pkl')
-        
         if hasattr(scaler, 'n_features_in_'):
             st.session_state['expected_features'] = scaler.n_features_in_
         else:
             st.session_state['expected_features'] = 11
-            
         return model, scaler
     except:
         try:
@@ -268,7 +80,6 @@ def engineer_features(df):
     df_copy['url_length'] = df_copy['URL'].fillna('').apply(len)
     df_copy['loves_usia_interaction'] = df_copy['Loves'] * df_copy['usia']
     
-    # Encode jenis_makanan
     food_type_map = {'ayam': 0, 'daging': 1, 'ikan': 2, 'sayur': 3}
     df_copy['jenis_makanan_encoded'] = df_copy['jenis_makanan'].map(food_type_map).fillna(0)
     
@@ -278,51 +89,22 @@ def engineer_features(df):
 df = load_data()
 df_featured = engineer_features(df)
 
-# Daftar fitur (11 fitur)
 feature_columns = [
-    'usia',
-    'Loves', 
-    'title_length', 
-    'title_word_count',
-    'num_ingredients', 
-    'ingredients_length', 
-    'num_steps', 
-    'steps_length',
-    'url_length', 
-    'loves_usia_interaction',
-    'jenis_makanan_encoded'
+    'usia', 'Loves', 'title_length', 'title_word_count',
+    'num_ingredients', 'ingredients_length', 'num_steps', 'steps_length',
+    'url_length', 'loves_usia_interaction', 'jenis_makanan_encoded'
 ]
-
-# Mapping untuk tampilan nama fitur dalam Bahasa Indonesia
-feature_names_id = {
-    'usia': 'Usia',
-    'Loves': 'Jumlah Likes',
-    'title_length': 'Panjang Judul',
-    'title_word_count': 'Jumlah Kata Judul',
-    'num_ingredients': 'Jumlah Bahan',
-    'ingredients_length': 'Panjang Teks Bahan',
-    'num_steps': 'Jumlah Langkah',
-    'steps_length': 'Panjang Teks Langkah',
-    'url_length': 'Panjang URL',
-    'loves_usia_interaction': 'Interaksi Likes x Usia',
-    'jenis_makanan_encoded': 'Jenis Makanan',
-    'jumlah_kalori': 'Jumlah Kalori'
-}
 
 model, scaler = load_model()
 
 # Header
-st.markdown('<div class="main-header">🍗 Dashboard Prediksi Kalori Resep Ayam</div>', 
-            unsafe_allow_html=True)
-st.markdown('<hr class="divider">', unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #2E7D32;'>🍗 Dashboard Prediksi Kalori Resep Ayam</h1>", unsafe_allow_html=True)
+st.markdown("---")
 
 # Sidebar
 with st.sidebar:
     st.markdown("### Navigasi")
-    page = st.radio(
-        "",
-        ["Data Overview", "Model Performance", "Calorie Prediction", "Kesimpulan & Rekomendasi"]
-    )
+    page = st.radio("", ["Data Overview", "Model Performance", "Calorie Prediction", "Kesimpulan & Rekomendasi"])
     
     st.markdown("---")
     st.markdown("### Tentang Aplikasi")
@@ -338,126 +120,51 @@ with st.sidebar:
     st.metric("Total Resep", f"{len(df):,}")
     st.metric("Rata-rata Kalori", f"{df['jumlah_kalori'].mean():.0f} kkal")
     st.metric("Rata-rata Likes", f"{df['Loves'].mean():.1f}")
-    
-    if model is not None:
-        st.markdown("---")
-        st.markdown("### Info Model")
-        st.caption(f"Jumlah fitur: {st.session_state.get('expected_features', 11)}")
 
 # ==================== PAGE 1: DATA OVERVIEW ====================
 if page == "Data Overview":
-    st.markdown('<div class="page-subtitle">📊 Data Overview</div>', unsafe_allow_html=True)
+    st.header("📊 Data Overview")
     
     col1, col2, col3, col4 = st.columns(4)
+    col1.metric("Total Resep", f"{len(df):,}")
+    col2.metric("Rata-rata Kalori", f"{df['jumlah_kalori'].mean():.0f} kkal")
+    col3.metric("Rentang Kalori", f"{df['jumlah_kalori'].min():.0f} - {df['jumlah_kalori'].max():.0f}")
+    col4.metric("Rata-rata Popularitas", f"{df['Loves'].mean():.1f}")
     
-    with col1:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>Total Resep</h3>
-            <div class="value">{len(df):,}</div>
-            <div class="target">resep ayam unik</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>Rata-rata Kalori</h3>
-            <div class="value">{df['jumlah_kalori'].mean():.0f} kkal</div>
-            <div class="target">per porsi</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>Rentang Kalori</h3>
-            <div class="value">{df['jumlah_kalori'].min():.0f} - {df['jumlah_kalori'].max():.0f}</div>
-            <div class="target">minimum ke maksimum</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col4:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>Rata-rata Popularitas</h3>
-            <div class="value">{df['Loves'].mean():.1f}</div>
-            <div class="target">jumlah likes per resep</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+    st.markdown("---")
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.subheader("Distribusi Kalori")
         fig = px.histogram(
-            df, x='jumlah_kalori', 
-            nbins=50, 
-            title='Distribution of Recipe Calories',
-            labels={'jumlah_kalori': 'Calories (kcal)', 'count': 'Number of Recipes'},
+            df, x='jumlah_kalori', nbins=50,
+            title='Distribusi Kalori Resep',
+            labels={'jumlah_kalori': 'Kalori (kkal)', 'count': 'Jumlah Resep'},
             color_discrete_sequence=['#2E7D32']
         )
         fig.add_vline(x=df['jumlah_kalori'].mean(), line_dash="dash", line_color="red",
                       annotation_text=f"Mean: {df['jumlah_kalori'].mean():.0f}")
-        fig.update_layout(height=450)
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
         st.subheader("10 Resep Paling Populer")
         top_recipes = df.nlargest(10, 'Loves')[['Title', 'Loves', 'jumlah_kalori']]
-        top_recipes.columns = ['Judul Resep', 'Jumlah Likes', 'Kalori (kkal)']
+        top_recipes.columns = ['Judul Resep', 'Jumlah Likes', 'Kalori']
         fig = px.bar(
-            top_recipes, 
-            x='Jumlah Likes', 
-            y='Judul Resep',
-            orientation='h',
-            title='Most Loved Recipes',
-            labels={'Jumlah Likes': 'Number of Likes', 'Judul Resep': ''},
-            color='Kalori (kkal)',
-            color_continuous_scale='Greens'
+            top_recipes, x='Jumlah Likes', y='Judul Resep', orientation='h',
+            title='Resep dengan Likes Terbanyak',
+            color='Kalori', color_continuous_scale='Greens'
         )
-        fig.update_layout(height=450)
         st.plotly_chart(fig, use_container_width=True)
     
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-    
-    # Feature correlation
-    st.subheader("Korelasi Fitur dengan Kalori")
-    corr_data = df_featured[feature_columns + ['jumlah_kalori']].copy()
-    corr_matrix = corr_data.corr()['jumlah_kalori'].sort_values(ascending=False)
-    corr_df = pd.DataFrame({
-        'Feature': corr_matrix.index,
-        'Correlation': corr_matrix.values
-    }).iloc[1:]
-    
-    # Rename features untuk tampilan yang lebih baik
-    corr_df['Feature'] = corr_df['Feature'].map(feature_names_id).fillna(corr_df['Feature'])
-    
-    fig = px.bar(
-        corr_df,
-        x='Correlation',
-        y='Feature',
-        orientation='h',
-        title='Correlation with Calorie Content',
-        color='Correlation',
-        color_continuous_scale='RdBu',
-        range_color=[-0.5, 0.5]
-    )
-    fig.update_layout(height=450)
-    st.plotly_chart(fig, use_container_width=True)
-    
-    # Tampilkan data
     with st.expander("Lihat Data Mentah"):
         st.dataframe(df.head(100), use_container_width=True)
-        st.caption(f"Menampilkan 100 dari {len(df)} baris data")
 
 # ==================== PAGE 2: MODEL PERFORMANCE ====================
 elif page == "Model Performance":
-    st.markdown('<div class="page-subtitle">📈 Model Performance</div>', unsafe_allow_html=True)
+    st.header("📈 Model Performance")
     
-    # Hasil model
     model_results = {
         'Model': ['Linear Regression', 'Random Forest', 'XGBoost', 'Random Forest Tuned', 'XGBoost Tuned'],
         'MAE': [362.29, 366.46, 376.53, 361.69, 362.40],
@@ -470,128 +177,61 @@ elif page == "Model Performance":
     TARGET_MAE = 75
     TARGET_R2 = 0.75
     
-    best_mae = results_df.loc[results_df['MAE'].idxmin(), 'MAE']
-    best_r2 = results_df.loc[results_df['R2'].idxmax(), 'R2']
+    best_mae = results_df['MAE'].min()
+    best_r2 = results_df['R2'].max()
     best_model_name = results_df.loc[results_df['R2'].idxmax(), 'Model']
     
-    # Ringkasan pencapaian target
-    st.markdown("### Business Target Achievement")
-    
     col1, col2, col3 = st.columns(3)
+    col1.metric("MAE Terbaik", f"{best_mae:.2f} kkal", delta=f"Target: {TARGET_MAE} kkal", delta_color="off")
+    col2.metric("R² Terbaik", f"{best_r2:.4f}", delta=f"Target: {TARGET_R2}", delta_color="off")
+    col3.metric("Model Terbaik", best_model_name)
     
-    with col1:
-        status_mae = "FAILED" if best_mae > TARGET_MAE else "ACHIEVED"
-        warna_mae = "status-fail" if best_mae > TARGET_MAE else "status-success"
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>MAE Target</h3>
-            <div class="value">{best_mae:.2f} kcal</div>
-            <div class="target">Target: ≤ {TARGET_MAE} kcal</div>
-            <div class="{warna_mae}">Status: {status_mae}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col2:
-        status_r2 = "FAILED" if best_r2 < TARGET_R2 else "ACHIEVED"
-        warna_r2 = "status-fail" if best_r2 < TARGET_R2 else "status-success"
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>R² Target</h3>
-            <div class="value">{best_r2:.4f}</div>
-            <div class="target">Target: ≥ {TARGET_R2}</div>
-            <div class="{warna_r2}">Status: {status_r2}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    with col3:
-        st.markdown(f"""
-        <div class="metric-card">
-            <h3>Best Model</h3>
-            <div class="value">{best_model_name}</div>
-            <div class="target">Berdasarkan R² score</div>
-        </div>
-        """, unsafe_allow_html=True)
-    
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+    st.markdown("---")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("MAE Comparison (Lower is Better)")
-        fig = px.bar(
-            results_df,
-            x='Model',
-            y='MAE',
-            title='Mean Absolute Error by Model',
-            color='MAE',
-            color_continuous_scale='Reds',
-            text='MAE'
-        )
-        fig.add_hline(y=TARGET_MAE, line_dash="dash", line_color="green",
-                      annotation_text=f"Target: {TARGET_MAE}")
+        fig = px.bar(results_df, x='Model', y='MAE', title='Perbandingan MAE (Semakin Kecil Semakin Baik)',
+                     color='MAE', color_continuous_scale='Reds', text='MAE')
+        fig.add_hline(y=TARGET_MAE, line_dash="dash", line_color="green", annotation_text=f"Target: {TARGET_MAE}")
         fig.update_traces(textposition='outside')
-        fig.update_layout(height=450)
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.subheader("R² Comparison (Higher is Better)")
-        fig = px.bar(
-            results_df,
-            x='Model',
-            y='R2',
-            title='R² Score by Model',
-            color='R2',
-            color_continuous_scale='RdYlGn',
-            range_color=[-0.2, 0.1],
-            text='R2'
-        )
-        fig.add_hline(y=TARGET_R2, line_dash="dash", line_color="green",
-                      annotation_text=f"Target: {TARGET_R2}")
-        fig.add_hline(y=0, line_dash="dash", line_color="red",
-                      annotation_text="Baseline (predicting mean)")
+        fig = px.bar(results_df, x='Model', y='R2', title='Perbandingan R² (Semakin Besar Semakin Baik)',
+                     color='R2', color_continuous_scale='RdYlGn', text='R2')
+        fig.add_hline(y=TARGET_R2, line_dash="dash", line_color="green", annotation_text=f"Target: {TARGET_R2}")
+        fig.add_hline(y=0, line_dash="dash", line_color="red", annotation_text="Baseline")
         fig.update_traces(textposition='outside')
-        fig.update_layout(height=450)
         st.plotly_chart(fig, use_container_width=True)
     
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+    st.markdown("---")
     
-    # Tabel metrik
     st.subheader("Tabel Metrik Detail")
     display_df = results_df.copy()
     display_df.columns = ['Model', 'MAE (kcal)', 'RMSE (kcal)', 'R²', 'MAPE (%)']
     st.dataframe(display_df, use_container_width=True)
     
-    # Analisis
-    st.markdown("""
-    <div class="warning-box">
-        <h3>Analisis Kinerja</h3>
-        <ul>
-            <li><strong>Best MAE: 361.69 kcal</strong> - Hampir <strong>5 kali lebih buruk</strong> dari target 75 kcal</li>
-            <li><strong>R² bernilai negatif</strong> - Model lebih buruk dari memprediksi nilai rata-rata kalori</li>
-            <li><strong>MAPE ~109%</strong> - Prediksi meleset lebih dari 100% rata-rata</li>
-            <li><strong>Semua model gagal</strong> mencapai target bisnis</li>
-        </ul>
-    </div>
-    """, unsafe_allow_html=True)
+    st.warning("""
+    **Analisis Kinerja:**
+    - Best MAE: 361.69 kcal (hampir 5 kali lebih buruk dari target 75 kcal)
+    - R² bernilai negatif (model lebih buruk dari memprediksi nilai rata-rata)
+    - MAPE ~109% (prediksi meleset lebih dari 100% rata-rata)
+    - Semua model gagal mencapai target bisnis
+    """)
 
 # ==================== PAGE 3: CALORIE PREDICTION ====================
 elif page == "Calorie Prediction":
-    st.markdown('<div class="page-subtitle">🔮 Calorie Prediction Tool</div>', unsafe_allow_html=True)
+    st.header("🔮 Prediksi Kalori")
     st.markdown("Masukkan informasi resep untuk memprediksi jumlah kalori")
     
-    # Informasi fitur yang dibutuhkan
     expected_features = st.session_state.get('expected_features', 11)
-    st.markdown(f"""
-    <div class="feature-info">
-        <small>ℹ️ Model membutuhkan <strong>{expected_features} fitur</strong> untuk prediksi</small>
-    </div>
-    """, unsafe_allow_html=True)
+    st.info(f"ℹ️ Model membutuhkan {expected_features} fitur untuk prediksi")
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("### Informasi Resep")
-        
         recipe_title = st.text_input("Judul Resep", placeholder="Contoh: Ayam Goreng Bumbu Kunyit")
         
         col_a, col_b = st.columns(2)
@@ -604,7 +244,6 @@ elif page == "Calorie Prediction":
         
     with col2:
         st.markdown("### Informasi Tambahan")
-        
         col_c, col_d = st.columns(2)
         with col_c:
             num_steps = st.number_input("Jumlah Langkah Memasak", min_value=0, max_value=100, value=5)
@@ -614,324 +253,193 @@ elif page == "Calorie Prediction":
             user_age = st.number_input("Usia Pengguna (tahun)", min_value=1, max_value=100, value=30)
             url_length = st.number_input("Panjang URL (karakter)", min_value=0, max_value=200, value=50)
     
-    # Fitur interaksi
     likes_age_interaction = num_likes * user_age
     
-    # Food type selection (fitur ke-11)
     st.markdown("### Jenis Makanan")
-    food_type = st.selectbox(
-        "Pilih Jenis Makanan", 
-        ["ayam", "daging", "ikan", "sayur"], 
-        index=0,
-        help="Jenis makanan utama dalam resep"
-    )
-    
-    # Encoding untuk jenis_makanan
-    food_type_mapping = {
-        'ayam': 0,
-        'daging': 1,
-        'ikan': 2,
-        'sayur': 3
-    }
+    food_type = st.selectbox("Pilih Jenis Makanan", ["ayam", "daging", "ikan", "sayur"], index=0)
+    food_type_mapping = {'ayam': 0, 'daging': 1, 'ikan': 2, 'sayur': 3}
     food_type_encoded = food_type_mapping.get(food_type, 0)
     
-    # Tombol prediksi
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+    st.markdown("---")
     predict_button = st.button("🔮 Prediksi Kalori", type="primary", use_container_width=True)
     
     if predict_button:
         with st.spinner("Menghitung prediksi kalori..."):
-            
-            # Buat feature array dengan 11 fitur
             features = np.array([[
-                float(user_age),                    # usia
-                float(num_likes),                   # Loves
-                float(title_length),                # title_length
-                float(title_word_count),            # title_word_count
-                float(num_ingredients),             # num_ingredients
-                float(ingredients_length),          # ingredients_length
-                float(num_steps),                   # num_steps
-                float(steps_length),                # steps_length
-                float(url_length),                  # url_length
-                float(likes_age_interaction),       # loves_usia_interaction
-                float(food_type_encoded)            # jenis_makanan_encoded
+                float(user_age), float(num_likes), float(title_length), float(title_word_count),
+                float(num_ingredients), float(ingredients_length), float(num_steps), float(steps_length),
+                float(url_length), float(likes_age_interaction), float(food_type_encoded)
             ]])
             
-            # Prediksi dengan model jika ada
             if model is not None and scaler is not None:
                 try:
                     if features.shape[1] == scaler.n_features_in_:
                         features_scaled = scaler.transform(features)
                         prediction = model.predict(features_scaled)[0]
                     else:
-                        st.error(f"Jumlah fitur tidak sesuai: {features.shape[1]} fitur diberikan, {scaler.n_features_in_} fitur diharapkan")
                         prediction = None
-                except Exception as e:
-                    st.warning(f"Error model: {str(e)[:200]}. Menggunakan prediksi sederhana.")
+                except:
                     prediction = None
             else:
                 prediction = None
             
-            # Fallback jika prediksi gagal
             if prediction is None:
-                # Prediksi sederhana berdasarkan bahan dan langkah
                 prediction = 300 + (num_ingredients * 25) + (num_steps * 20) + (ingredients_length * 0.1)
                 prediction = max(50, min(1500, prediction))
-                st.info("Menggunakan model prediksi sederhana karena model utama tidak tersedia.")
+                st.info("Menggunakan prediksi sederhana (model utama tidak tersedia)")
             else:
-                # Batasi range
                 prediction = max(50, min(1500, prediction))
             
-            # Tampilkan hasil
-            st.markdown('<hr class="divider">', unsafe_allow_html=True)
-            st.markdown("## Hasil Prediksi")
+            st.markdown("---")
+            st.subheader("Hasil Prediksi")
             
             col1, col2, col3 = st.columns(3)
+            col1.metric("Prediksi Kalori", f"{prediction:.0f} kkal")
             
-            with col1:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <h3>Prediksi Kalori</h3>
-                    <div class="value">{prediction:.0f} kkal</div>
-                    <div class="target">per porsi</div>
-                </div>
-                """, unsafe_allow_html=True)
+            if prediction < 400:
+                col2.metric("Kategori", "Rendah Kalori", delta="Cocok untuk diet")
+            elif prediction < 800:
+                col2.metric("Kategori", "Sedang", delta="Cocok untuk makan siang")
+            else:
+                col2.metric("Kategori", "Tinggi Kalori", delta="Konsumsi dengan bijak")
             
-            with col2:
-                if prediction < 400:
-                    status = "Rendah Kalori"
-                    warna = "status-success"
-                    message = "Cocok untuk diet"
-                elif prediction < 800:
-                    status = "Sedang"
-                    warna = "status-success"
-                    message = "Cocok untuk makan siang"
-                else:
-                    status = "Tinggi Kalori"
-                    warna = "status-fail"
-                    message = "Konsumsi dengan bijak"
-                
-                st.markdown(f"""
-                <div class="metric-card">
-                    <h3>Kategori</h3>
-                    <div class="{warna}" style="font-size:24px; font-weight:bold;">{status}</div>
-                    <div class="target">{message}</div>
-                </div>
-                """, unsafe_allow_html=True)
+            est_per_ingredient = prediction / max(num_ingredients, 1)
+            col3.metric("Estimasi per Bahan", f"{est_per_ingredient:.0f} kkal")
             
-            with col3:
-                est_per_ingredient = prediction / max(num_ingredients, 1)
-                st.markdown(f"""
-                <div class="metric-card">
-                    <h3>Estimasi per Bahan</h3>
-                    <div class="value">{est_per_ingredient:.0f} kkal</div>
-                    <div class="target">rata-rata per bahan</div>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            # Detail input
             with st.expander("Lihat Detail Input"):
                 input_data = pd.DataFrame({
-                    'Fitur': [
-                        'Usia Pengguna', 
-                        'Jumlah Likes', 
-                        'Panjang Judul', 
-                        'Jumlah Kata Judul', 
-                        'Jumlah Bahan', 
-                        'Panjang Teks Bahan', 
-                        'Jumlah Langkah', 
-                        'Panjang Teks Langkah',
-                        'Panjang URL', 
-                        'Interaksi Likes x Usia', 
-                        'Jenis Makanan'
-                    ],
-                    'Nilai': [
-                        user_age, 
-                        num_likes, 
-                        title_length, 
-                        title_word_count,
-                        num_ingredients, 
-                        ingredients_length, 
-                        num_steps, 
-                        steps_length,
-                        url_length, 
-                        likes_age_interaction, 
-                        f"{food_type} ({food_type_encoded})"
-                    ]
+                    'Fitur': ['Usia', 'Likes', 'Panjang Judul', 'Jumlah Kata Judul', 'Jumlah Bahan',
+                              'Panjang Bahan', 'Jumlah Langkah', 'Panjang Langkah', 'Panjang URL',
+                              'Likes x Usia', 'Jenis Makanan'],
+                    'Nilai': [user_age, num_likes, title_length, title_word_count, num_ingredients,
+                              ingredients_length, num_steps, steps_length, url_length,
+                              likes_age_interaction, f"{food_type} ({food_type_encoded})"]
                 })
                 st.dataframe(input_data, use_container_width=True)
-            
-            # Rekomendasi
-            if prediction < 400:
-                st.markdown("""
-                <div class="success-box">
-                    <h3>Rekomendasi</h3>
-                    <p>Resep ini memiliki kalori rendah, cocok untuk menu diet atau makan malam ringan.</p>
-                </div>
-                """, unsafe_allow_html=True)
-            elif prediction < 800:
-                st.markdown("""
-                <div class="info-box">
-                    <h3>Rekomendasi</h3>
-                    <p>Resep ini memiliki kalori sedang, cocok untuk menu makan siang.</p>
-                </div>
-                """, unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                <div class="warning-box">
-                    <h3>Rekomendasi</h3>
-                    <p>Resep ini memiliki kalori tinggi. Konsumsi dengan bijak atau bagi untuk dua porsi.</p>
-                </div>
-                """, unsafe_allow_html=True)
 
 # ==================== PAGE 4: KESIMPULAN ====================
 else:
-    st.markdown('<div class="page-subtitle">📝 Kesimpulan & Rekomendasi</div>', unsafe_allow_html=True)
+    st.header("📝 Kesimpulan & Rekomendasi")
     
-    # Business question
-    st.markdown("""
-    <div class="info-box">
-        <h3>Pertanyaan Bisnis</h3>
-        <p><strong>"Dapatkah model machine learning memprediksi kalori resep ayam dengan MAE ≤ 75 kkal dan R² ≥ 0.75?"</strong></p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.info("**Pertanyaan Bisnis:** Dapatkah model machine learning memprediksi kalori resep ayam dengan MAE ≤ 75 kkal dan R² ≥ 0.75?")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("""
-        <div class="warning-box">
-            <h3>Target TIDAK Tercapai</h3>
-            <ul>
-                <li><strong>Best MAE:</strong> 361.69 kcal (Target: ≤ 75 kcal)</li>
-                <li><strong>Best R²:</strong> -0.0018 (Target: ≥ 0.75)</li>
-                <li><strong>Best MAPE:</strong> ~109% (Error sangat tinggi)</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.subheader("❌ Target TIDAK Tercapai")
+        st.write("""
+        - **Best MAE:** 361.69 kcal (Target: ≤ 75 kcal)
+        - **Best R²:** -0.0018 (Target: ≥ 0.75)
+        - **Best MAPE:** ~109% (Error sangat tinggi)
+        """)
+        
+        st.markdown("---")
+        st.subheader("📊 Perbandingan Target")
+        target_df = pd.DataFrame({
+            'Metrik': ['MAE', 'R²', 'MAPE'],
+            'Target': ['≤ 75 kcal', '≥ 0.75', '≤ 10%'],
+            'Hasil': ['361.69 kcal', '-0.0018', '~109%'],
+            'Status': ['❌ Gagal', '❌ Gagal', '❌ Gagal']
+        })
+        st.dataframe(target_df, use_container_width=True)
     
     with col2:
-        st.markdown("""
-        <div class="metric-card">
-            <h3>Ringkasan Kinerja Model</h3>
-            <p><strong>Random Forest Tuned</strong> adalah model terbaik namun masih jauh dari optimal:</p>
-            <ul style="text-align:left; margin-top:10px;">
-                <li>MAE: 361.69 kcal (Target: 75)</li>
-                <li>RMSE: 418.67 kcal</li>
-                <li>R²: -0.0041 (negatif)</li>
-                <li>MAPE: 109%</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.subheader("📊 Ringkasan Kinerja Model")
+        st.write("**Random Forest Tuned** adalah model terbaik namun masih jauh dari optimal:")
+        
+        summary_df = pd.DataFrame({
+            'Metrik': ['MAE', 'RMSE', 'R²', 'MAPE'],
+            'Nilai': ['361.69 kcal', '418.67 kcal', '-0.0041', '109%'],
+            'Keterangan': ['Target: 75 kcal', 'Standar deviasi tinggi', 'Negatif → buruk', 'Error > 100%']
+        })
+        st.dataframe(summary_df, use_container_width=True)
+        
+        st.markdown("---")
+        st.subheader("🏆 Peringkat Model")
+        st.write("""
+        1. **Random Forest Tuned** (R² = -0.0041)
+        2. **XGBoost Tuned** (R² = -0.0030)
+        3. **Linear Regression** (R² = -0.0018)
+        4. **Random Forest** (R² = -0.0372)
+        5. **XGBoost** (R² = -0.1212)
+        """)
     
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-    
-    st.subheader("Analisis Akar Masalah")
+    st.markdown("---")
+    st.subheader("🔍 Analisis Akar Masalah")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("""
-        <div class="rec-card">
-            <h4>Mengapa Model Gagal?</h4>
-            <ul>
-                <li><strong>Variansi Kalori Tinggi</strong> - Kalori berkisar 50-1500 kcal (std: 418 kcal)</li>
-                <li><strong>Fitur Terbatas</strong> - Korelasi terbaik hanya ~0.3 (lemah)</li>
-                <li><strong>Informasi Penting Hilang</strong> - Tidak ada ukuran porsi, metode masak, kuantitas bahan</li>
-                <li><strong>Keterbatasan Fitur Teks</strong> - Teks resep tidak secara langsung menunjukkan kalori</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.write("**Mengapa Model Gagal?**")
+        st.write("""
+        1. **Variansi Kalori Tinggi** - Kalori berkisar 50-1500 kcal (std: 418 kcal)
+        2. **Fitur Terbatas** - Korelasi terbaik hanya ~0.3 (lemah)
+        3. **Informasi Penting Hilang** - Tidak ada ukuran porsi, metode masak, kuantitas bahan
+        4. **Keterbatasan Fitur Teks** - Teks resep tidak secara langsung menunjukkan kalori
+        """)
     
     with col2:
-        # Korelasi fitur - DIPERBAIKI
+        # Korelasi fitur
         corr_data = df_featured[feature_columns + ['jumlah_kalori']].copy()
-        corr_matrix_full = corr_data.corr()
-        
-        # Rename untuk tampilan yang lebih baik
-        corr_matrix_renamed = corr_matrix_full.rename(columns=feature_names_id, index=feature_names_id)
-        
-        fig = px.imshow(
-            corr_matrix_renamed,
-            title='Matriks Korelasi Fitur',
-            color_continuous_scale='RdBu',
-            zmin=-1, zmax=1,
-            text_auto='.2f',
-            aspect='auto'
-        )
-        fig.update_layout(height=450)
-        st.plotly_chart(fig, use_container_width=True)
+        corr_values = corr_data.corr()['jumlah_kalori'].sort_values(ascending=False)
+        corr_df = pd.DataFrame({
+            'Fitur': ['Usia', 'Likes', 'Panjang Judul', 'Jumlah Kata', 'Jumlah Bahan',
+                      'Panjang Bahan', 'Jumlah Langkah', 'Panjang Langkah', 'Panjang URL',
+                      'Likes x Usia', 'Jenis Makanan', 'Jumlah Kalori'],
+            'Korelasi': corr_values.values
+        })
+        st.write("**Korelasi Fitur dengan Kalori:**")
+        st.dataframe(corr_df.head(6), use_container_width=True)
     
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
-    
-    st.subheader("Rekomendasi")
+    st.markdown("---")
+    st.subheader("💡 Rekomendasi")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.markdown("""
-        <div class="rec-card">
-            <h4>Untuk Data yang Lebih Baik</h4>
-            <ul>
-                <li>Kumpulkan informasi ukuran porsi</li>
-                <li>Tambahkan kategori metode memasak</li>
-                <li>Sertakan kuantitas bahan baku</li>
-                <li>Tambahkan rincian nutrisi per bahan</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.write("**Untuk Data yang Lebih Baik**")
+        st.write("""
+        - Kumpulkan informasi ukuran porsi
+        - Tambahkan kategori metode memasak
+        - Sertakan kuantitas bahan baku
+        - Tambahkan rincian nutrisi per bahan
+        """)
     
     with col2:
-        st.markdown("""
-        <div class="rec-card">
-            <h4>Untuk Fitur yang Lebih Baik</h4>
-            <ul>
-                <li>Gunakan embedding bahan (Word2Vec/BERT)</li>
-                <li>Ekstrak teknik memasak dari teks</li>
-                <li>Identifikasi bahan berkalori tinggi</li>
-                <li>Hitung rasio antar bahan</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.write("**Untuk Fitur yang Lebih Baik**")
+        st.write("""
+        - Gunakan embedding bahan (Word2Vec/BERT)
+        - Ekstrak teknik memasak dari teks
+        - Identifikasi bahan berkalori tinggi
+        - Hitung rasio antar bahan
+        """)
     
     with col3:
-        st.markdown("""
-        <div class="rec-card">
-            <h4>Untuk Bisnis</h4>
-            <ul>
-                <li>Dataset ini <strong>TIDAK COCOK</strong> untuk prediksi kalori</li>
-                <li>Gunakan estimasi berbasis aturan</li>
-                <li>Bermitra dengan database nutrisi</li>
-                <li>Gunakan verifikasi manual untuk aplikasi kritis</li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True)
+        st.write("**Untuk Bisnis**")
+        st.write("""
+        - Dataset ini **TIDAK COCOK** untuk prediksi kalori
+        - Gunakan estimasi berbasis aturan
+        - Bermitra dengan database nutrisi
+        - Gunakan verifikasi manual
+        """)
     
-    st.markdown('<hr class="divider">', unsafe_allow_html=True)
+    st.markdown("---")
     
-    # Kesimpulan akhir
-    st.markdown("""
-    <div class="info-box">
-        <h3>Kesimpulan Akhir</h3>
-        <p>
-        <strong>Semua model gagal mencapai target bisnis.</strong> Model terbaik (Random Forest Tuned) 
-        mencapai Mean Absolute Error sebesar <strong>361.69 kkal</strong>, hampir <strong>5 kali lebih buruk</strong> 
-        dari target 75 kkal. Nilai R² yang negatif menunjukkan bahwa model lebih buruk daripada hanya 
-        memprediksi nilai rata-rata kalori.
-        </p>
-        <p>
-        <strong>Masalah utamanya bukan pada pemilihan model atau tuning hyperparameter, melainkan pada dataset itu sendiri.</strong> 
-        Fitur yang tersedia (teks resep, jumlah likes, usia pengguna) memiliki korelasi yang lemah dengan jumlah kalori. 
-        Informasi kritis seperti ukuran porsi, kuantitas bahan spesifik, dan metode memasak tidak tersedia dalam dataset.
-        </p>
-        <p>
-        <strong>Untuk prediksi kalori yang akurat, diperlukan pendekatan yang berbeda:</strong> mengumpulkan data nutrisi yang lebih detail 
-        atau menggunakan sistem berbasis aturan dengan database bahan baku yang terstandardisasi.
-        </p>
-    </div>
-    """, unsafe_allow_html=True)
+    st.subheader("📌 Kesimpulan Akhir")
+    st.write("""
+    **Semua model gagal mencapai target bisnis.** Model terbaik (Random Forest Tuned) 
+    mencapai Mean Absolute Error sebesar **361.69 kkal**, hampir **5 kali lebih buruk** 
+    dari target 75 kkal. Nilai R² yang negatif menunjukkan bahwa model lebih buruk daripada 
+    hanya memprediksi nilai rata-rata kalori.
     
-    # Tampilkan data lengkap
-    with st.expander("Lihat Seluruh Data Resep"):
+    **Masalah utamanya bukan pada pemilihan model atau tuning hyperparameter, melainkan pada dataset itu sendiri.** 
+    Fitur yang tersedia (teks resep, jumlah likes, usia pengguna) memiliki korelasi yang lemah dengan jumlah kalori. 
+    Informasi kritis seperti ukuran porsi, kuantitas bahan spesifik, dan metode memasak tidak tersedia dalam dataset.
+    
+    **Untuk prediksi kalori yang akurat, diperlukan pendekatan yang berbeda:** mengumpulkan data nutrisi yang lebih detail 
+    atau menggunakan sistem berbasis aturan dengan database bahan baku yang terstandardisasi.
+    """)
+    
+    with st.expander("📋 Lihat Seluruh Data Resep"):
         st.dataframe(df, use_container_width=True)
         st.caption(f"Total {len(df)} resep ayam")
