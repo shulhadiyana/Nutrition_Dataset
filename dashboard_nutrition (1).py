@@ -11,7 +11,7 @@ warnings.filterwarnings('ignore')
 
 # Konfigurasi halaman
 st.set_page_config(
-    page_title="Chicken Recipe Calorie Prediction Dashboard",
+    page_title="Dashboard Prediksi Kalori Resep Ayam",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -175,11 +175,30 @@ st.markdown("""
         border-radius: 5px;
         border: none;
         padding: 10px 20px;
+        width: 100%;
     }
     
     .stButton > button:hover {
         background-color: #1B5E20;
         color: white;
+    }
+    
+    .feature-info {
+        background-color: #FFF3E0;
+        padding: 10px;
+        border-radius: 8px;
+        margin: 10px 0;
+        font-size: 12px;
+        border-left: 3px solid #FF9800;
+    }
+    
+    .page-subtitle {
+        font-size: 20px;
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #A5D6A7;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -191,16 +210,16 @@ def load_data():
         df = pd.read_csv('cleaned_nutrition_data.csv')
         return df
     except:
-        st.warning("Dataset not found. Using sample data...")
+        st.warning("Dataset tidak ditemukan. Menggunakan data contoh...")
         np.random.seed(42)
         n_samples = 5000
         df = pd.DataFrame({
-            'Title': [f'Chicken Recipe {i}' for i in range(n_samples)],
-            'Ingredients': ['ingredient1--ingredient2--ingredient3'] * n_samples,
-            'Steps': ['step1--step2--step3'] * n_samples,
+            'Title': [f'Resep Ayam {i}' for i in range(n_samples)],
+            'Ingredients': ['bahan1--bahan2--bahan3'] * n_samples,
+            'Steps': ['langkah1--langkah2--langkah3'] * n_samples,
             'Loves': np.random.randint(0, 1000, n_samples),
             'URL': ['/id/resep/1'] * n_samples,
-            'jenis_makanan': ['ayam'] * n_samples,
+            'jenis_makanan': np.random.choice(['ayam', 'daging', 'ikan'], n_samples),
             'usia': np.random.randint(18, 65, n_samples),
             'jumlah_kalori': np.random.normal(780, 400, n_samples)
         })
@@ -213,14 +232,22 @@ def load_model():
     try:
         model = joblib.load('best_nutrision.pkl')
         scaler = joblib.load('scaler_food.pkl')
+        
+        if hasattr(scaler, 'n_features_in_'):
+            st.session_state['expected_features'] = scaler.n_features_in_
+        else:
+            st.session_state['expected_features'] = 11
+            
         return model, scaler
     except:
         try:
             with open('best_calorie_model.pkl', 'rb') as f:
                 model = pickle.load(f)
             scaler = None
+            st.session_state['expected_features'] = 11
             return model, scaler
         except:
+            st.session_state['expected_features'] = 11
             return None, None
 
 # Feature engineering
@@ -241,87 +268,105 @@ def engineer_features(df):
     df_copy['url_length'] = df_copy['URL'].fillna('').apply(len)
     df_copy['loves_usia_interaction'] = df_copy['Loves'] * df_copy['usia']
     
+    # Encode jenis_makanan
+    food_type_map = {'ayam': 0, 'daging': 1, 'ikan': 2, 'sayur': 3}
+    df_copy['jenis_makanan_encoded'] = df_copy['jenis_makanan'].map(food_type_map).fillna(0)
+    
     return df_copy
 
 # Load data dan model
 df = load_data()
 df_featured = engineer_features(df)
 
+# Daftar fitur (11 fitur)
 feature_columns = [
-    'usia', 'Loves', 'title_length', 'title_word_count',
-    'num_ingredients', 'ingredients_length', 'num_steps', 'steps_length',
-    'url_length', 'loves_usia_interaction'
+    'usia',
+    'Loves', 
+    'title_length', 
+    'title_word_count',
+    'num_ingredients', 
+    'ingredients_length', 
+    'num_steps', 
+    'steps_length',
+    'url_length', 
+    'loves_usia_interaction',
+    'jenis_makanan_encoded'
 ]
 
 model, scaler = load_model()
 
 # Header
-st.markdown('<div class="main-header">Chicken Recipe Calorie Prediction Dashboard</div>', 
+st.markdown('<div class="main-header">🍗 Dashboard Prediksi Kalori Resep Ayam</div>', 
             unsafe_allow_html=True)
 st.markdown('<hr class="divider">', unsafe_allow_html=True)
 
-# Sidebar
+# Sidebar - Menggunakan Bahasa Indonesia
 with st.sidebar:
-    st.markdown("### Navigation")
+    st.markdown("### Navigasi")
     page = st.radio(
         "",
-        ["Data Overview", "Model Performance", "Calorie Prediction", "Conclusions & Recommendations"]
+        ["Data Overview", "Model Performance", "Calorie Prediction", "Kesimpulan & Rekomendasi"]
     )
     
     st.markdown("---")
-    st.markdown("### About")
+    st.markdown("### Tentang Aplikasi")
     st.info(
-        "This application analyzes chicken recipes to predict calorie content.\n\n"
-        "Business Targets:\n"
-        "- MAE ≤ 75 kcal\n"
+        "Aplikasi ini menganalisis resep ayam untuk memprediksi jumlah kalori.\n\n"
+        "Target Bisnis:\n"
+        "- MAE ≤ 75 kkal\n"
         "- R² ≥ 0.75"
     )
     
     st.markdown("---")
-    st.markdown("### Quick Statistics")
-    st.metric("Total Recipes", f"{len(df):,}")
-    st.metric("Average Calories", f"{df['jumlah_kalori'].mean():.0f} kcal")
-    st.metric("Average Likes", f"{df['Loves'].mean():.1f}")
+    st.markdown("### Statistik Cepat")
+    st.metric("Total Resep", f"{len(df):,}")
+    st.metric("Rata-rata Kalori", f"{df['jumlah_kalori'].mean():.0f} kkal")
+    st.metric("Rata-rata Likes", f"{df['Loves'].mean():.1f}")
+    
+    if model is not None:
+        st.markdown("---")
+        st.markdown("### Info Model")
+        st.caption(f"Jumlah fitur: {st.session_state.get('expected_features', 11)}")
 
 # ==================== PAGE 1: DATA OVERVIEW ====================
 if page == "Data Overview":
-    st.header("Data Overview")
+    st.markdown('<div class="page-subtitle">📊 Data Overview</div>', unsafe_allow_html=True)
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         st.markdown(f"""
         <div class="metric-card">
-            <h3>Total Recipes</h3>
+            <h3>Total Resep</h3>
             <div class="value">{len(df):,}</div>
-            <div class="target">unique chicken recipes</div>
+            <div class="target">resep ayam unik</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col2:
         st.markdown(f"""
         <div class="metric-card">
-            <h3>Average Calories</h3>
-            <div class="value">{df['jumlah_kalori'].mean():.0f} kcal</div>
-            <div class="target">per serving</div>
+            <h3>Rata-rata Kalori</h3>
+            <div class="value">{df['jumlah_kalori'].mean():.0f} kkal</div>
+            <div class="target">per porsi</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
         <div class="metric-card">
-            <h3>Calorie Range</h3>
+            <h3>Rentang Kalori</h3>
             <div class="value">{df['jumlah_kalori'].min():.0f} - {df['jumlah_kalori'].max():.0f}</div>
-            <div class="target">min to max</div>
+            <div class="target">minimum ke maksimum</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col4:
         st.markdown(f"""
         <div class="metric-card">
-            <h3>Average Popularity</h3>
+            <h3>Rata-rata Popularitas</h3>
             <div class="value">{df['Loves'].mean():.1f}</div>
-            <div class="target">average likes per recipe</div>
+            <div class="target">jumlah likes per resep</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -330,7 +375,7 @@ if page == "Data Overview":
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("Calorie Distribution")
+        st.subheader("Distribusi Kalori")
         fig = px.histogram(
             df, x='jumlah_kalori', 
             nbins=50, 
@@ -344,17 +389,17 @@ if page == "Data Overview":
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
-        st.subheader("Top 10 Most Popular Recipes")
+        st.subheader("10 Resep Paling Populer")
         top_recipes = df.nlargest(10, 'Loves')[['Title', 'Loves', 'jumlah_kalori']]
-        top_recipes.columns = ['Recipe Title', 'Number of Likes', 'Calories (kcal)']
+        top_recipes.columns = ['Judul Resep', 'Jumlah Likes', 'Kalori (kkal)']
         fig = px.bar(
             top_recipes, 
-            x='Number of Likes', 
-            y='Recipe Title',
+            x='Jumlah Likes', 
+            y='Judul Resep',
             orientation='h',
             title='Most Loved Recipes',
-            labels={'Number of Likes': 'Number of Likes', 'Recipe Title': ''},
-            color='Calories (kcal)',
+            labels={'Jumlah Likes': 'Number of Likes', 'Judul Resep': ''},
+            color='Kalori (kkal)',
             color_continuous_scale='Greens'
         )
         fig.update_layout(height=450)
@@ -362,14 +407,52 @@ if page == "Data Overview":
     
     st.markdown('<hr class="divider">', unsafe_allow_html=True)
     
+    # Feature correlation
+    st.subheader("Korelasi Fitur dengan Kalori")
+    corr_data = df_featured[feature_columns + ['jumlah_kalori']].copy()
+    corr_matrix = corr_data.corr()['jumlah_kalori'].sort_values(ascending=False)
+    corr_df = pd.DataFrame({
+        'Feature': corr_matrix.index,
+        'Correlation': corr_matrix.values
+    }).iloc[1:]
+    
+    # Rename features untuk tampilan yang lebih baik
+    feature_names_id = {
+        'usia': 'Age',
+        'Loves': 'Likes',
+        'title_length': 'Title Length',
+        'title_word_count': 'Title Word Count',
+        'num_ingredients': 'Number of Ingredients',
+        'ingredients_length': 'Ingredients Length',
+        'num_steps': 'Number of Steps',
+        'steps_length': 'Steps Length',
+        'url_length': 'URL Length',
+        'loves_usia_interaction': 'Likes × Age',
+        'jenis_makanan_encoded': 'Food Type'
+    }
+    corr_df['Feature'] = corr_df['Feature'].map(feature_names_id).fillna(corr_df['Feature'])
+    
+    fig = px.bar(
+        corr_df,
+        x='Correlation',
+        y='Feature',
+        orientation='h',
+        title='Correlation with Calorie Content',
+        color='Correlation',
+        color_continuous_scale='RdBu',
+        range_color=[-0.5, 0.5]
+    )
+    fig.update_layout(height=450)
+    st.plotly_chart(fig, use_container_width=True)
+    
     # Tampilkan data
-    with st.expander("View Raw Data"):
+    with st.expander("Lihat Data Mentah"):
         st.dataframe(df.head(100), use_container_width=True)
-        st.caption(f"Showing 100 out of {len(df)} rows")
+        st.caption(f"Menampilkan 100 dari {len(df)} baris data")
 
 # ==================== PAGE 2: MODEL PERFORMANCE ====================
 elif page == "Model Performance":
-    st.header("Model Performance Analysis")
+    st.markdown('<div class="page-subtitle">📈 Model Performance</div>', unsafe_allow_html=True)
     
     # Hasil model
     model_results = {
@@ -422,7 +505,7 @@ elif page == "Model Performance":
         <div class="metric-card">
             <h3>Best Model</h3>
             <div class="value">{best_model_name}</div>
-            <div class="target">Based on R² score</div>
+            <div class="target">Berdasarkan R² score</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -470,7 +553,7 @@ elif page == "Model Performance":
     st.markdown('<hr class="divider">', unsafe_allow_html=True)
     
     # Tabel metrik
-    st.subheader("Detailed Metrics Table")
+    st.subheader("Tabel Metrik Detail")
     display_df = results_df.copy()
     display_df.columns = ['Model', 'MAE (kcal)', 'RMSE (kcal)', 'R²', 'MAPE (%)']
     st.dataframe(display_df, use_container_width=True)
@@ -478,110 +561,158 @@ elif page == "Model Performance":
     # Analisis
     st.markdown("""
     <div class="warning-box">
-        <h3>Performance Analysis</h3>
+        <h3>Analisis Kinerja</h3>
         <ul>
-            <li><strong>Best MAE: 361.69 kcal</strong> - Nearly <strong>5 times worse</strong> than the target of 75 kcal</li>
-            <li><strong>R² is negative</strong> - Models perform worse than simply predicting the mean calorie value</li>
-            <li><strong>MAPE ~109%</strong> - Predictions are off by more than 100% on average</li>
-            <li><strong>All models failed</strong> to achieve business targets</li>
+            <li><strong>Best MAE: 361.69 kcal</strong> - Hampir <strong>5 kali lebih buruk</strong> dari target 75 kcal</li>
+            <li><strong>R² bernilai negatif</strong> - Model lebih buruk dari memprediksi nilai rata-rata kalori</li>
+            <li><strong>MAPE ~109%</strong> - Prediksi meleset lebih dari 100% rata-rata</li>
+            <li><strong>Semua model gagal</strong> mencapai target bisnis</li>
         </ul>
     </div>
     """, unsafe_allow_html=True)
 
 # ==================== PAGE 3: CALORIE PREDICTION ====================
 elif page == "Calorie Prediction":
-    st.header("Calorie Prediction Tool")
-    st.markdown("Enter recipe information to predict calorie content")
+    st.markdown('<div class="page-subtitle">🔮 Calorie Prediction Tool</div>', unsafe_allow_html=True)
+    st.markdown("Masukkan informasi resep untuk memprediksi jumlah kalori")
+    
+    # Informasi fitur yang dibutuhkan
+    expected_features = st.session_state.get('expected_features', 11)
+    st.markdown(f"""
+    <div class="feature-info">
+        <small>ℹ️ Model membutuhkan <strong>{expected_features} fitur</strong> untuk prediksi</small>
+    </div>
+    """, unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("### Recipe Information")
+        st.markdown("### Informasi Resep")
         
-        recipe_title = st.text_input("Recipe Title", placeholder="Example: Fried Chicken with Turmeric")
+        recipe_title = st.text_input("Judul Resep", placeholder="Contoh: Ayam Goreng Bumbu Kunyit")
         
         col_a, col_b = st.columns(2)
         with col_a:
-            title_length = st.number_input("Title Length (characters)", min_value=0, max_value=500, value=50)
-            title_word_count = st.number_input("Title Word Count", min_value=0, max_value=50, value=8)
+            title_length = st.number_input("Panjang Judul (karakter)", min_value=0, max_value=500, value=50)
+            title_word_count = st.number_input("Jumlah Kata Judul", min_value=0, max_value=50, value=8)
         with col_b:
-            num_ingredients = st.number_input("Number of Ingredients", min_value=0, max_value=100, value=10)
-            ingredients_length = st.number_input("Ingredients Text Length (chars)", min_value=0, max_value=5000, value=200)
+            num_ingredients = st.number_input("Jumlah Bahan", min_value=0, max_value=100, value=10)
+            ingredients_length = st.number_input("Panjang Teks Bahan (karakter)", min_value=0, max_value=5000, value=200)
         
     with col2:
-        st.markdown("### Additional Information")
+        st.markdown("### Informasi Tambahan")
         
         col_c, col_d = st.columns(2)
         with col_c:
-            num_steps = st.number_input("Number of Cooking Steps", min_value=0, max_value=100, value=5)
-            steps_length = st.number_input("Steps Text Length (chars)", min_value=0, max_value=5000, value=150)
+            num_steps = st.number_input("Jumlah Langkah Memasak", min_value=0, max_value=100, value=5)
+            steps_length = st.number_input("Panjang Teks Langkah (karakter)", min_value=0, max_value=5000, value=150)
         with col_d:
-            num_likes = st.number_input("Number of Likes", min_value=0, max_value=10000, value=100)
-            user_age = st.number_input("User Age (years)", min_value=1, max_value=100, value=30)
-            url_length = st.number_input("URL Length (chars)", min_value=0, max_value=200, value=50)
+            num_likes = st.number_input("Jumlah Likes", min_value=0, max_value=10000, value=100)
+            user_age = st.number_input("Usia Pengguna (tahun)", min_value=1, max_value=100, value=30)
+            url_length = st.number_input("Panjang URL (karakter)", min_value=0, max_value=200, value=50)
     
     # Fitur interaksi
     likes_age_interaction = num_likes * user_age
     
+    # Food type selection (fitur ke-11)
+    st.markdown("### Jenis Makanan")
+    food_type = st.selectbox(
+        "Pilih Jenis Makanan", 
+        ["ayam", "daging", "ikan", "sayur"], 
+        index=0,
+        help="Jenis makanan utama dalam resep"
+    )
+    
+    # Encoding untuk jenis_makanan
+    food_type_mapping = {
+        'ayam': 0,
+        'daging': 1,
+        'ikan': 2,
+        'sayur': 3
+    }
+    food_type_encoded = food_type_mapping.get(food_type, 0)
+    
     # Tombol prediksi
     st.markdown('<hr class="divider">', unsafe_allow_html=True)
-    predict_button = st.button("Predict Calories", type="primary", use_container_width=True)
+    predict_button = st.button("🔮 Prediksi Kalori", type="primary", use_container_width=True)
     
     if predict_button:
-        with st.spinner("Calculating calorie prediction..."):
-            # Buat feature array
+        with st.spinner("Menghitung prediksi kalori..."):
+            
+            # Buat feature array dengan 11 fitur
             features = np.array([[
-                user_age, num_likes, title_length, title_word_count,
-                num_ingredients, ingredients_length, num_steps, steps_length,
-                url_length, likes_age_interaction
+                float(user_age),                    # usia
+                float(num_likes),                   # Loves
+                float(title_length),                # title_length
+                float(title_word_count),            # title_word_count
+                float(num_ingredients),             # num_ingredients
+                float(ingredients_length),          # ingredients_length
+                float(num_steps),                   # num_steps
+                float(steps_length),                # steps_length
+                float(url_length),                  # url_length
+                float(likes_age_interaction),       # loves_usia_interaction
+                float(food_type_encoded)            # jenis_makanan_encoded
             ]])
             
             # Prediksi dengan model jika ada
             if model is not None and scaler is not None:
                 try:
-                    features_scaled = scaler.transform(features)
-                    prediction = model.predict(features_scaled)[0]
+                    if features.shape[1] == scaler.n_features_in_:
+                        features_scaled = scaler.transform(features)
+                        prediction = model.predict(features_scaled)[0]
+                    else:
+                        st.error(f"Jumlah fitur tidak sesuai: {features.shape[1]} fitur diberikan, {scaler.n_features_in_} fitur diharapkan")
+                        prediction = None
                 except Exception as e:
-                    st.warning(f"Model error: {e}. Using simplified prediction.")
-                    prediction = 300 + (num_ingredients * 25) + (num_steps * 20) + (ingredients_length * 0.1)
+                    st.warning(f"Error model: {str(e)[:200]}. Menggunakan prediksi sederhana.")
+                    prediction = None
             else:
-                # Prediksi sederhana
-                prediction = 300 + (num_ingredients * 25) + (num_steps * 20) + (ingredients_length * 0.1)
+                prediction = None
             
-            # Batasi range
-            prediction = max(50, min(1500, prediction))
+            # Fallback jika prediksi gagal
+            if prediction is None:
+                # Prediksi sederhana berdasarkan bahan dan langkah
+                prediction = 300 + (num_ingredients * 25) + (num_steps * 20) + (ingredients_length * 0.1)
+                prediction = max(50, min(1500, prediction))
+                st.info("Menggunakan model prediksi sederhana karena model utama tidak tersedia.")
+            else:
+                # Batasi range
+                prediction = max(50, min(1500, prediction))
             
             # Tampilkan hasil
             st.markdown('<hr class="divider">', unsafe_allow_html=True)
-            st.markdown("## Prediction Results")
+            st.markdown("## Hasil Prediksi")
             
             col1, col2, col3 = st.columns(3)
             
             with col1:
                 st.markdown(f"""
                 <div class="metric-card">
-                    <h3>Predicted Calories</h3>
-                    <div class="value">{prediction:.0f} kcal</div>
-                    <div class="target">per serving</div>
+                    <h3>Prediksi Kalori</h3>
+                    <div class="value">{prediction:.0f} kkal</div>
+                    <div class="target">per porsi</div>
                 </div>
                 """, unsafe_allow_html=True)
             
             with col2:
                 if prediction < 400:
-                    status = "Low Calorie"
+                    status = "Rendah Kalori"
                     warna = "status-success"
+                    message = "Cocok untuk diet"
                 elif prediction < 800:
-                    status = "Moderate"
+                    status = "Sedang"
                     warna = "status-success"
+                    message = "Cocok untuk makan siang"
                 else:
-                    status = "High Calorie"
+                    status = "Tinggi Kalori"
                     warna = "status-fail"
+                    message = "Konsumsi dengan bijak"
                 
                 st.markdown(f"""
                 <div class="metric-card">
-                    <h3>Category</h3>
+                    <h3>Kategori</h3>
                     <div class="{warna}" style="font-size:24px; font-weight:bold;">{status}</div>
-                    <div class="target">based on calorie count</div>
+                    <div class="target">{message}</div>
                 </div>
                 """, unsafe_allow_html=True)
             
@@ -589,21 +720,41 @@ elif page == "Calorie Prediction":
                 est_per_ingredient = prediction / max(num_ingredients, 1)
                 st.markdown(f"""
                 <div class="metric-card">
-                    <h3>Estimate per Ingredient</h3>
-                    <div class="value">{est_per_ingredient:.0f} kcal</div>
-                    <div class="target">average per ingredient</div>
+                    <h3>Estimasi per Bahan</h3>
+                    <div class="value">{est_per_ingredient:.0f} kkal</div>
+                    <div class="target">rata-rata per bahan</div>
                 </div>
                 """, unsafe_allow_html=True)
             
             # Detail input
-            with st.expander("Input Details Used"):
+            with st.expander("Lihat Detail Input"):
                 input_data = pd.DataFrame({
-                    'Feature': ['User Age', 'Number of Likes', 'Title Length', 'Title Word Count', 
-                              'Number of Ingredients', 'Ingredients Text Length', 'Number of Steps', 'Steps Text Length',
-                              'URL Length', 'Likes × Age Interaction'],
-                    'Value': [user_age, num_likes, title_length, title_word_count,
-                              num_ingredients, ingredients_length, num_steps, steps_length,
-                              url_length, likes_age_interaction]
+                    'Fitur': [
+                        'Usia Pengguna', 
+                        'Jumlah Likes', 
+                        'Panjang Judul', 
+                        'Jumlah Kata Judul', 
+                        'Jumlah Bahan', 
+                        'Panjang Teks Bahan', 
+                        'Jumlah Langkah', 
+                        'Panjang Teks Langkah',
+                        'Panjang URL', 
+                        'Interaksi Likes x Usia', 
+                        'Jenis Makanan'
+                    ],
+                    'Nilai': [
+                        user_age, 
+                        num_likes, 
+                        title_length, 
+                        title_word_count,
+                        num_ingredients, 
+                        ingredients_length, 
+                        num_steps, 
+                        steps_length,
+                        url_length, 
+                        likes_age_interaction, 
+                        f"{food_type} ({food_type_encoded})"
+                    ]
                 })
                 st.dataframe(input_data, use_container_width=True)
             
@@ -611,34 +762,34 @@ elif page == "Calorie Prediction":
             if prediction < 400:
                 st.markdown("""
                 <div class="success-box">
-                    <h3>Recommendation</h3>
-                    <p>This recipe has low calories, suitable for diet menus or light dinners.</p>
+                    <h3>Rekomendasi</h3>
+                    <p>Resep ini memiliki kalori rendah, cocok untuk menu diet atau makan malam ringan.</p>
                 </div>
                 """, unsafe_allow_html=True)
             elif prediction < 800:
                 st.markdown("""
                 <div class="info-box">
-                    <h3>Recommendation</h3>
-                    <p>This recipe has moderate calories, suitable for lunch menus.</p>
+                    <h3>Rekomendasi</h3>
+                    <p>Resep ini memiliki kalori sedang, cocok untuk menu makan siang.</p>
                 </div>
                 """, unsafe_allow_html=True)
             else:
                 st.markdown("""
                 <div class="warning-box">
-                    <h3>Recommendation</h3>
-                    <p>This recipe has high calories. Consume wisely or share for two servings.</p>
+                    <h3>Rekomendasi</h3>
+                    <p>Resep ini memiliki kalori tinggi. Konsumsi dengan bijak atau bagi untuk dua porsi.</p>
                 </div>
                 """, unsafe_allow_html=True)
 
-# ==================== PAGE 4: CONCLUSIONS ====================
+# ==================== PAGE 4: KESIMPULAN ====================
 else:
-    st.header("Conclusions and Recommendations")
+    st.markdown('<div class="page-subtitle">📝 Kesimpulan & Rekomendasi</div>', unsafe_allow_html=True)
     
     # Business question
     st.markdown("""
     <div class="info-box">
-        <h3>Business Question</h3>
-        <p><strong>"Can a machine learning model predict chicken recipe calories with MAE ≤ 75 kcal and R² ≥ 0.75?"</strong></p>
+        <h3>Pertanyaan Bisnis</h3>
+        <p><strong>"Dapatkah model machine learning memprediksi kalori resep ayam dengan MAE ≤ 75 kkal dan R² ≥ 0.75?"</strong></p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -647,11 +798,11 @@ else:
     with col1:
         st.markdown("""
         <div class="warning-box">
-            <h3>Target NOT Achieved</h3>
+            <h3>Target TIDAK Tercapai</h3>
             <ul>
                 <li><strong>Best MAE:</strong> 361.69 kcal (Target: ≤ 75 kcal)</li>
                 <li><strong>Best R²:</strong> -0.0018 (Target: ≥ 0.75)</li>
-                <li><strong>Best MAPE:</strong> ~109% (Extremely high error)</li>
+                <li><strong>Best MAPE:</strong> ~109% (Error sangat tinggi)</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -659,12 +810,12 @@ else:
     with col2:
         st.markdown("""
         <div class="metric-card">
-            <h3>Model Performance Summary</h3>
-            <p><strong>Random Forest Tuned</strong> was the best performer but still far from optimal:</p>
+            <h3>Ringkasan Kinerja Model</h3>
+            <p><strong>Random Forest Tuned</strong> adalah model terbaik namun masih jauh dari optimal:</p>
             <ul style="text-align:left; margin-top:10px;">
                 <li>MAE: 361.69 kcal (Target: 75)</li>
                 <li>RMSE: 418.67 kcal</li>
-                <li>R²: -0.0041 (negative)</li>
+                <li>R²: -0.0041 (negatif)</li>
                 <li>MAPE: 109%</li>
             </ul>
         </div>
@@ -672,19 +823,19 @@ else:
     
     st.markdown('<hr class="divider">', unsafe_allow_html=True)
     
-    st.subheader("Root Cause Analysis")
+    st.subheader("Analisis Akar Masalah")
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("""
         <div class="rec-card">
-            <h4>Why Did Models Fail?</h4>
+            <h4>Mengapa Model Gagal?</h4>
             <ul>
-                <li><strong>High Calorie Variance</strong> - Calories range from 50 to 1,500 kcal (std: 418 kcal)</li>
-                <li><strong>Limited Predictive Features</strong> - Best correlation with calories is only ~0.3 (weak)</li>
-                <li><strong>Missing Key Information</strong> - No portion sizes, cooking methods, or ingredient quantities</li>
-                <li><strong>Text Features Limitations</strong> - Recipe text doesn't directly indicate calories</li>
+                <li><strong>Variansi Kalori Tinggi</strong> - Kalori berkisar 50-1500 kcal (std: 418 kcal)</li>
+                <li><strong>Fitur Terbatas</strong> - Korelasi terbaik hanya ~0.3 (lemah)</li>
+                <li><strong>Informasi Penting Hilang</strong> - Tidak ada ukuran porsi, metode masak, kuantitas bahan</li>
+                <li><strong>Keterbatasan Fitur Teks</strong> - Teks resep tidak secara langsung menunjukkan kalori</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -694,9 +845,12 @@ else:
         corr_data = df_featured[feature_columns + ['jumlah_kalori']].copy()
         corr_matrix = corr_data.corr()
         
+        # Rename untuk tampilan lebih baik
+        corr_matrix = corr_matrix.rename(columns=feature_names_id, index=feature_names_id)
+        
         fig = px.imshow(
             corr_matrix,
-            title='Feature Correlation Matrix',
+            title='Matriks Korelasi Fitur',
             color_continuous_scale='RdBu',
             zmin=-1, zmax=1,
             text_auto='.2f',
@@ -707,19 +861,19 @@ else:
     
     st.markdown('<hr class="divider">', unsafe_allow_html=True)
     
-    st.subheader("Recommendations")
+    st.subheader("Rekomendasi")
     
     col1, col2, col3 = st.columns(3)
     
     with col1:
         st.markdown("""
         <div class="rec-card">
-            <h4>For Better Data</h4>
+            <h4>Untuk Data yang Lebih Baik</h4>
             <ul>
-                <li>Collect portion size information</li>
-                <li>Add cooking method categories</li>
-                <li>Include standardized ingredient quantities</li>
-                <li>Add nutritional breakdown per ingredient</li>
+                <li>Kumpulkan informasi ukuran porsi</li>
+                <li>Tambahkan kategori metode memasak</li>
+                <li>Sertakan kuantitas bahan baku</li>
+                <li>Tambahkan rincian nutrisi per bahan</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -727,12 +881,12 @@ else:
     with col2:
         st.markdown("""
         <div class="rec-card">
-            <h4>For Better Features</h4>
+            <h4>Untuk Fitur yang Lebih Baik</h4>
             <ul>
-                <li>Use ingredient embeddings (Word2Vec/BERT)</li>
-                <li>Extract cooking techniques</li>
-                <li>Identify high-calorie ingredients</li>
-                <li>Calculate ingredient ratios</li>
+                <li>Gunakan embedding bahan (Word2Vec/BERT)</li>
+                <li>Ekstrak teknik memasak dari teks</li>
+                <li>Identifikasi bahan berkalori tinggi</li>
+                <li>Hitung rasio antar bahan</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -740,12 +894,12 @@ else:
     with col3:
         st.markdown("""
         <div class="rec-card">
-            <h4>For Business</h4>
+            <h4>Untuk Bisnis</h4>
             <ul>
-                <li>This dataset is <strong>NOT suitable</strong> for calorie prediction</li>
-                <li>Consider rule-based estimation instead</li>
-                <li>Partner with nutrition databases</li>
-                <li>Use human verification for critical applications</li>
+                <li>Dataset ini <strong>TIDAK COCOK</strong> untuk prediksi kalori</li>
+                <li>Gunakan estimasi berbasis aturan</li>
+                <li>Bermitra dengan database nutrisi</li>
+                <li>Gunakan verifikasi manual untuk aplikasi kritis</li>
             </ul>
         </div>
         """, unsafe_allow_html=True)
@@ -755,26 +909,26 @@ else:
     # Kesimpulan akhir
     st.markdown("""
     <div class="info-box">
-        <h3>Final Conclusion</h3>
+        <h3>Kesimpulan Akhir</h3>
         <p>
-        <strong>All models failed to achieve the business targets.</strong> The best performing model (Random Forest Tuned) 
-        achieved a Mean Absolute Error of <strong>361.69 kcal</strong>, which is nearly <strong>5 times worse</strong> 
-        than the target of 75 kcal. The negative R² scores indicate that models perform worse than simply predicting 
-        the mean calorie value.
+        <strong>Semua model gagal mencapai target bisnis.</strong> Model terbaik (Random Forest Tuned) 
+        mencapai Mean Absolute Error sebesar <strong>361.69 kkal</strong>, hampir <strong>5 kali lebih buruk</strong> 
+        dari target 75 kkal. Nilai R² yang negatif menunjukkan bahwa model lebih buruk daripada hanya 
+        memprediksi nilai rata-rata kalori.
         </p>
         <p>
-        <strong>The primary issue is not model selection or hyperparameter tuning, but rather the dataset itself.</strong> 
-        The available features (recipe text, likes, user age) have weak correlations with calorie content. 
-        Critical information such as portion sizes, specific ingredient quantities, and cooking methods are missing.
+        <strong>Masalah utamanya bukan pada pemilihan model atau tuning hyperparameter, melainkan pada dataset itu sendiri.</strong> 
+        Fitur yang tersedia (teks resep, jumlah likes, usia pengguna) memiliki korelasi yang lemah dengan jumlah kalori. 
+        Informasi kritis seperti ukuran porsi, kuantitas bahan spesifik, dan metode memasak tidak tersedia dalam dataset.
         </p>
         <p>
-        <strong>For accurate calorie prediction, a different approach is needed:</strong> either collect more detailed nutritional data 
-        or use a rule-based system with standardized ingredient databases.
+        <strong>Untuk prediksi kalori yang akurat, diperlukan pendekatan yang berbeda:</strong> mengumpulkan data nutrisi yang lebih detail 
+        atau menggunakan sistem berbasis aturan dengan database bahan baku yang terstandardisasi.
         </p>
     </div>
     """, unsafe_allow_html=True)
     
     # Tampilkan data lengkap
-    with st.expander("View All Recipe Data"):
+    with st.expander("Lihat Seluruh Data Resep"):
         st.dataframe(df, use_container_width=True)
-        st.caption(f"Total {len(df)} chicken recipes")
+        st.caption(f"Total {len(df)} resep ayam")
