@@ -293,6 +293,22 @@ feature_columns = [
     'jenis_makanan_encoded'
 ]
 
+# Mapping untuk tampilan nama fitur dalam Bahasa Indonesia
+feature_names_id = {
+    'usia': 'Usia',
+    'Loves': 'Jumlah Likes',
+    'title_length': 'Panjang Judul',
+    'title_word_count': 'Jumlah Kata Judul',
+    'num_ingredients': 'Jumlah Bahan',
+    'ingredients_length': 'Panjang Teks Bahan',
+    'num_steps': 'Jumlah Langkah',
+    'steps_length': 'Panjang Teks Langkah',
+    'url_length': 'Panjang URL',
+    'loves_usia_interaction': 'Interaksi Likes x Usia',
+    'jenis_makanan_encoded': 'Jenis Makanan',
+    'jumlah_kalori': 'Jumlah Kalori'
+}
+
 model, scaler = load_model()
 
 # Header
@@ -300,7 +316,7 @@ st.markdown('<div class="main-header">🍗 Dashboard Prediksi Kalori Resep Ayam<
             unsafe_allow_html=True)
 st.markdown('<hr class="divider">', unsafe_allow_html=True)
 
-# Sidebar - Menggunakan Bahasa Indonesia
+# Sidebar
 with st.sidebar:
     st.markdown("### Navigasi")
     page = st.radio(
@@ -417,19 +433,6 @@ if page == "Data Overview":
     }).iloc[1:]
     
     # Rename features untuk tampilan yang lebih baik
-    feature_names_id = {
-        'usia': 'Age',
-        'Loves': 'Likes',
-        'title_length': 'Title Length',
-        'title_word_count': 'Title Word Count',
-        'num_ingredients': 'Number of Ingredients',
-        'ingredients_length': 'Ingredients Length',
-        'num_steps': 'Number of Steps',
-        'steps_length': 'Steps Length',
-        'url_length': 'URL Length',
-        'loves_usia_interaction': 'Likes × Age',
-        'jenis_makanan_encoded': 'Food Type'
-    }
     corr_df['Feature'] = corr_df['Feature'].map(feature_names_id).fillna(corr_df['Feature'])
     
     fig = px.bar(
@@ -841,15 +844,15 @@ else:
         """, unsafe_allow_html=True)
     
     with col2:
-        # Korelasi fitur
+        # Korelasi fitur - DIPERBAIKI
         corr_data = df_featured[feature_columns + ['jumlah_kalori']].copy()
-        corr_matrix = corr_data.corr()
+        corr_matrix_full = corr_data.corr()
         
-        # Rename untuk tampilan lebih baik
-        corr_matrix = corr_matrix.rename(columns=feature_names_id, index=feature_names_id)
+        # Rename untuk tampilan yang lebih baik
+        corr_matrix_renamed = corr_matrix_full.rename(columns=feature_names_id, index=feature_names_id)
         
         fig = px.imshow(
-            corr_matrix,
+            corr_matrix_renamed,
             title='Matriks Korelasi Fitur',
             color_continuous_scale='RdBu',
             zmin=-1, zmax=1,
